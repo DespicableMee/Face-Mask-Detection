@@ -5,13 +5,31 @@
 from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 from tensorflow.keras.preprocessing.image import img_to_array
 from tensorflow.keras.models import load_model
-from imutils.video import VideoStream
+from imutils.video import VideoStream, FileVideoStream
 import numpy as np
 import argparse
 import imutils
 import time
 import cv2
 import os
+import datetime
+
+
+class FPS():
+	def __init__(self):
+		self.startTime = 0
+		self.endTime = 0
+
+	def start(self):
+		self.startTime = datetime.datetime.now()
+	
+	def update(self):
+		self.endTime = self.startTime
+		self.startTime = datetime.datetime.now()
+
+	def fps(self):
+		return 1/(self.endTime - self.startTime).seconds
+
 
 def detect_and_predict_mask(frame, faceNet, maskNet):
 	# grab the dimensions of the frame and then construct a blob
@@ -74,74 +92,82 @@ def detect_and_predict_mask(frame, faceNet, maskNet):
 	# locations
 	return (locs, preds)
 
-# construct the argument parser and parse the arguments
-ap = argparse.ArgumentParser()
-ap.add_argument("-f", "--face", type=str,
-	default="face_detector",
-	help="path to face detector model directory")
-ap.add_argument("-m", "--model", type=str,
-	default="mask_detector.model",
-	help="path to trained face mask detector model")
-ap.add_argument("-c", "--confidence", type=float, default=0.5,
-	help="minimum probability to filter weak detections")
-args = vars(ap.parse_args())
 
-# load our serialized face detector model from disk
-print("[INFO] loading face detector model...")
-prototxtPath = os.path.sep.join([args["face"], "deploy.prototxt"])
-weightsPath = os.path.sep.join([args["face"],
-	"res10_300x300_ssd_iter_140000.caffemodel"])
-faceNet = cv2.dnn.readNet(prototxtPath, weightsPath)
 
-# load the face mask detector model from disk
-print("[INFO] loading face mask detector model...")
-maskNet = load_model(args["model"])
+if __name__ == "__main__":
 
-# initialize the video stream and allow the camera sensor to warm up
-print("[INFO] starting video stream...")
-vs = VideoStream(src=0).start()
-time.sleep(2.0)
+	# construct the argument parser and parse the arguments
+	ap = argparse.ArgumentParser()
+	ap.add_argument("-f", "--face", type=str,
+		default="face_detector",
+		help="path to face detector model directory")
+	ap.add_argument("-m", "--model", type=str,
+		default="mask_detector.model",
+		help="path to trained face mask detector model")
+	ap.add_argument("-c", "--confidence", type=float, default=0.5,
+		help="minimum probability to filter weak detections")
+	args = vars(ap.parse_args())
 
-# loop over the frames from the video stream
-while True:
-	# grab the frame from the threaded video stream and resize it
-	# to have a maximum width of 400 pixels
-	frame = vs.read()
-	frame = imutils.resize(frame, width=400)
+	# load our serialized face detector model from disk
+	print("[INFO] loading face detector model...")
+	prototxtPath = os.path.sep.join([args["face"], "deploy.prototxt"])
+	weightsPath = os.path.sep.join([args["face"],
+		"res10_300x300_ssd_iter_140000.caffemodel"])
+	faceNet = cv2.dnn.readNet(prototxtPath, weightsPath)
 
-	# detect faces in the frame and determine if they are wearing a
-	# face mask or not
-	(locs, preds) = detect_and_predict_mask(frame, faceNet, maskNet)
+	# load the face mask detector model from disk
+	print("[INFO] loading face mask detector model...")
+	maskNet = load_model(args["model"])
 
-	# loop over the detected face locations and their corresponding
-	# locations
-	for (box, pred) in zip(locs, preds):
-		# unpack the bounding box and predictions
-		(startX, startY, endX, endY) = box
-		(mask, withoutMask) = pred
+	# initialize the video stream and allow the camera sensor to warm up
+	print("[INFO] starting video stream...")
+	vs = VideoStream(src=0, framerate=60).start()
+	# vs = VideoStream(src=3, framerate=60).start()
+	# vs = FileVideoStream(path="videos\sampleVideo2.720p.mp4").start()
 
-		# determine the class label and color we'll use to draw
-		# the bounding box and text
-		label = "Mask" if mask > withoutMask else "No Mask"
-		color = (0, 255, 0) if label == "Mask" else (0, 0, 255)
-			
-		# include the probability in the label
-		label = "{}: {:.2f}%".format(label, max(mask, withoutMask) * 100)
+	time.sleep(2.0)
 
-		# display the label and bounding box rectangle on the output
-		# frame
-		cv2.putText(frame, label, (startX, startY - 10),
-			cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 2)
-		cv2.rectangle(frame, (startX, startY), (endX, endY), color, 2)
+	# loop over the frames from the video stream
+	while True:
+		# grab the frame from the threaded video stream and resize it
+		# to have a maximum width of 400 pixels
+		frame = vs.read()
+		frame = imutils.resize(frame, width=480, height=360)
 
-	# show the output frame
-	cv2.imshow("Frame", frame)
-	key = cv2.waitKey(1) & 0xFF
+		# detect faces in the frame and determine if they are wearing a
+		# face mask or not
+		(locs, preds) = detect_and_predict_mask(frame, faceNet, maskNet)
 
-	# if the `q` key was pressed, break from the loop
-	if key == ord("q"):
-		break
+		# loop over the detected face locations and their corresponding
+		# locations
+		for (box, pred) in zip(locs, preds):
+			# unpack the bounding box and predictions
+			(startX, startY, endX, endY) = box
+			(mask, withoutMask) = pred
 
-# do a bit of cleanup
-cv2.destroyAllWindows()
-vs.stop()
+			# determine the class label and color we'll use to draw
+			# the bounding box and text
+			label = "Mask" if mask > withoutMask else "No Mask"
+			color = (0, 255, 0) if label == "Mask" else (0, 0, 255)
+				
+			# include the probability in the label
+			label = "{}: {:.2f}%".format(label, max(mask, withoutMask) * 100)
+
+			# display the label and bounding box rectangle on the output
+			# frame
+			cv2.putText(frame, label, (startX, startY - 10),
+				cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 2)
+			cv2.rectangle(frame, (startX, startY), (endX, endY), color, 2)
+
+		# show the output frame
+		cv2.resizeWindow('Frame', 480, 360)
+		cv2.imshow("Frame", frame)
+		key = cv2.waitKey(1) & 0xFF
+
+		# if the `q` key was pressed, break from the loop
+		if key == ord("q"):
+			break
+
+	# do a bit of cleanup
+	cv2.destroyAllWindows()
+	vs.stop()
