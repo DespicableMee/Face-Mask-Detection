@@ -216,8 +216,7 @@ def mask_detection(args):
         mask_video(args)
         st.markdown('<h2 align="center">Detection on Webcam</h2>',
                     unsafe_allow_html=True)
-        # st.markdown('<h3 align="center">This feature will be available soon!</h3>', unsafe_allow_html=True)
-        image_placeholder = st.empty()
+        image_placeholder = st.markdown('<h3 align="center">Click start to start the webcamera stream!</h3>', unsafe_allow_html=True)
         if st.button('Start'):
             while True:
                 # grab the frame from the threaded video stream and resize it
@@ -264,7 +263,7 @@ ap.add_argument("-f", "--face", type=str,
 ap.add_argument("-m", "--model", type=str,
                 default="mask_detector.model",
                 help="path to trained face mask detector model")
-ap.add_argument("-c", "--confidence", type=float, default=0.5,
+ap.add_argument("-c", "--confidence", type=float, default=0.4,
                 help="minimum probability to filter weak detections")
 args = vars(ap.parse_args())
 mask_detection(args)
