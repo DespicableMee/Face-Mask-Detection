@@ -186,7 +186,7 @@ def initiallise_app():
         "Choose among the given options:", activities)
 
     initiallise_models()
-
+    initiallise_webcam()
     if choice == 'Image':
         st.markdown('<h2 align="center">Detection on Image</h2>',
                     unsafe_allow_html=True)
@@ -204,7 +204,6 @@ def initiallise_app():
                 st.image(RGB_img, use_column_width=True)
 
     if choice == 'Webcam':
-        initiallise_webcam()
         st.markdown('<h2 align="center">Detection on Webcam</h2>',
                     unsafe_allow_html=True)
         image_placeholder = st.markdown(
