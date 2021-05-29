@@ -150,25 +150,12 @@ def detect_and_predict_mask(frame):
     return (locs, preds)
 
 
-def mask_video():
+def initiallise_webcam():
     global RGB_img, model, net, weightsPath, prototxtPath, vs
-    # load our serialized face detector model from disk
-
-    # print("[INFO] loading face detector model...")
-    # prototxtPath = os.path.sep.join(["face_detector", "deploy.prototxt"])
-    # weightsPath = os.path.sep.join(["face_detector",
-    #                                 "res10_300x300_ssd_iter_140000.caffemodel"])
-    # net = cv2.dnn.readNet(prototxtPath, weightsPath)
-
-    # # load the face mask detector model from disk
-    # print("[INFO] loading face mask detector model...")
-    # model = load_model("mask_detector.model")
 
     # initialize the video stream and allow the camera sensor to warm up
     print("[INFO] starting video stream...")
     vs = VideoStream(src=0, framerate=60).start()
-    # vs = VideoStream(src=3, framerate=60).start()
-    # vs = FileVideoStream(path="videos\sampleVideo2.720p.mp4").start()
 
     time.sleep(2.0)
 
@@ -217,7 +204,7 @@ def initiallise_app():
                 st.image(RGB_img, use_column_width=True)
 
     if choice == 'Webcam':
-        mask_video()
+        initiallise_webcam()
         st.markdown('<h2 align="center">Detection on Webcam</h2>',
                     unsafe_allow_html=True)
         image_placeholder = st.markdown(
