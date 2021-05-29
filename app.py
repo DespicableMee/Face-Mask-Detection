@@ -1,3 +1,4 @@
+from numpy.lib.type_check import imag
 import streamlit as st
 from PIL import Image, ImageEnhance
 import numpy as np
@@ -24,7 +25,7 @@ def local_css(file_name):
         st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
 
-def mask_image():
+def detect_from_uploaded_image(image):
     global RGB_img
     # load our serialized face detector model from disk
     print("[INFO] loading face detector model...")
@@ -39,7 +40,7 @@ def mask_image():
 
     # load the input image from disk and grab the image spatial
     # dimensions
-    image = cv2.imread("./images/out.jpg")
+    # image = cv2.imread("./images/out.jpg")
     (h, w) = image.shape[:2]
 
     # construct a blob from the image
@@ -96,7 +97,8 @@ def mask_image():
             cv2.putText(image, label, (startX, startY - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 2)
             cv2.rectangle(image, (startX, startY), (endX, endY), color, 2)
-            RGB_img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            # RGB_img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            RGB_img = image
 
 
 def detect_and_predict_mask(frame, net, model):
@@ -203,20 +205,20 @@ def initiallise_app():
         image_file = st.file_uploader("", type=["jpg"])  # upload image
         if image_file is not None:
             our_image = Image.open(image_file)  # making compatible to PIL
-            im = our_image.save('./images/out.jpg')
-            saved_image = st.image(
-                image_file, caption='', use_column_width=True)
+            uploaded_image = st.image(
+                image_file, caption='Uploaded Image', use_column_width=True)
             st.markdown(
                 '<h3 align="center">Image uploaded successfully!</h3>', unsafe_allow_html=True)
             if st.button('Process'):
-                mask_image()
+                detect_from_uploaded_image(np.asarray(our_image))
                 st.image(RGB_img, use_column_width=True)
 
     if choice == 'Webcam':
         mask_video()
         st.markdown('<h2 align="center">Detection on Webcam</h2>',
                     unsafe_allow_html=True)
-        image_placeholder = st.markdown('<h3 align="center">Click start to start the webcamera stream!</h3>', unsafe_allow_html=True)
+        image_placeholder = st.markdown(
+            '<h3 align="center">Click start to start the webcamera stream!</h3>', unsafe_allow_html=True)
         if st.button('Start'):
             while True:
                 # grab the frame from the threaded video stream and resize it
