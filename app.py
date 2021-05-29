@@ -6,9 +6,8 @@ import os
 from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 from tensorflow.keras.preprocessing.image import img_to_array
 from tensorflow.keras.models import load_model
-import detect_mask_image
 import pandas as pd
-from imutils.video import VideoStream, FileVideoStream
+from imutils.video import VideoStream
 import numpy as np
 import argparse
 import imutils
@@ -60,7 +59,7 @@ def mask_image():
 
         # filter out weak detections by ensuring the confidence is
         # greater than the minimum confidence
-        if confidence > 0.5:
+        if confidence > CONFIDENCE:
             # compute the (x, y)-coordinates of the bounding box for
             # the object
             box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
@@ -100,7 +99,7 @@ def mask_image():
             RGB_img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
 
-def detect_and_predict_mask(frame, faceNet, maskNet):
+def detect_and_predict_mask(frame, net, model):
     # grab the dimensions of the frame and then construct a blob
     # from it
     (h, w) = frame.shape[:2]
@@ -108,8 +107,8 @@ def detect_and_predict_mask(frame, faceNet, maskNet):
                                  (104.0, 177.0, 123.0))
 
     # pass the blob through the network and obtain the face detections
-    faceNet.setInput(blob)
-    detections = faceNet.forward()
+    net.setInput(blob)
+    detections = net.forward()
 
     # initialize our list of faces, their corresponding locations,
     # and the list of predictions from our face mask network
@@ -125,7 +124,7 @@ def detect_and_predict_mask(frame, faceNet, maskNet):
 
         # filter out weak detections by ensuring the confidence is
         # greater than the minimum confidence
-        if confidence > args["confidence"]:
+        if confidence > CONFIDENCE:
             # compute the (x, y)-coordinates of the bounding box for
             # the object
             box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
@@ -155,25 +154,26 @@ def detect_and_predict_mask(frame, faceNet, maskNet):
         # faces at the same time rather than one-by-one predictions
         # in the above `for` loop
         faces = np.array(faces, dtype="float32")
-        preds = maskNet.predict(faces, batch_size=32)
+        preds = model.predict(faces, batch_size=32)
 
     # return a 2-tuple of the face locations and their corresponding
     # locations
     return (locs, preds)
 
 
-def mask_video(args):
-    global faceNet, maskNet, vs
+def mask_video():
+    global net, model, vs
     # load our serialized face detector model from disk
+
     print("[INFO] loading face detector model...")
-    prototxtPath = os.path.sep.join([args["face"], "deploy.prototxt"])
-    weightsPath = os.path.sep.join([args["face"],
+    prototxtPath = os.path.sep.join(["face_detector", "deploy.prototxt"])
+    weightsPath = os.path.sep.join(["face_detector",
                                     "res10_300x300_ssd_iter_140000.caffemodel"])
-    faceNet = cv2.dnn.readNet(prototxtPath, weightsPath)
+    net = cv2.dnn.readNet(prototxtPath, weightsPath)
 
     # load the face mask detector model from disk
     print("[INFO] loading face mask detector model...")
-    maskNet = load_model(args["model"])
+    model = load_model("mask_detector.model")
 
     # initialize the video stream and allow the camera sensor to warm up
     print("[INFO] starting video stream...")
@@ -184,7 +184,7 @@ def mask_video(args):
     time.sleep(2.0)
 
 
-def mask_detection(args):
+def initiallise_app():
     local_css("css/styles.css")
     st.markdown('<h1 align="center">😷 Face Mask Detection</h1>',
                 unsafe_allow_html=True)
@@ -213,7 +213,7 @@ def mask_detection(args):
                 st.image(RGB_img, use_column_width=True)
 
     if choice == 'Webcam':
-        mask_video(args)
+        mask_video()
         st.markdown('<h2 align="center">Detection on Webcam</h2>',
                     unsafe_allow_html=True)
         image_placeholder = st.markdown('<h3 align="center">Click start to start the webcamera stream!</h3>', unsafe_allow_html=True)
@@ -226,7 +226,7 @@ def mask_detection(args):
 
                 # detect faces in the frame and determine if they are wearing a
                 # face mask or not
-                (locs, preds) = detect_and_predict_mask(frame, faceNet, maskNet)
+                (locs, preds) = detect_and_predict_mask(frame, net, model)
 
                 # loop over the detected face locations and their corresponding
                 # locations
@@ -256,14 +256,6 @@ def mask_detection(args):
     st.text("By:\n- Mohamed Farhan Fazal\n- Madhusudhan R\n- Kiran CR")
 
 
-ap = argparse.ArgumentParser()
-ap.add_argument("-f", "--face", type=str,
-                default="face_detector",
-                help="path to face detector model directory")
-ap.add_argument("-m", "--model", type=str,
-                default="mask_detector.model",
-                help="path to trained face mask detector model")
-ap.add_argument("-c", "--confidence", type=float, default=0.4,
-                help="minimum probability to filter weak detections")
-args = vars(ap.parse_args())
-mask_detection(args)
+if __name__ == "__main__":
+    CONFIDENCE = 0.5
+    initiallise_app()
