@@ -26,21 +26,7 @@ def local_css(file_name):
 
 
 def detect_from_uploaded_image(image):
-    global RGB_img
-    # load our serialized face detector model from disk
-    print("[INFO] loading face detector model...")
-    prototxtPath = os.path.sep.join(["face_detector", "deploy.prototxt"])
-    weightsPath = os.path.sep.join(["face_detector",
-                                    "res10_300x300_ssd_iter_140000.caffemodel"])
-    net = cv2.dnn.readNet(prototxtPath, weightsPath)
-
-    # load the face mask detector model from disk
-    print("[INFO] loading face mask detector model...")
-    model = load_model("mask_detector.model")
-
-    # load the input image from disk and grab the image spatial
-    # dimensions
-    # image = cv2.imread("./images/out.jpg")
+    global RGB_img, model, net, weightsPath, prototxtPath
     (h, w) = image.shape[:2]
 
     # construct a blob from the image
@@ -101,7 +87,8 @@ def detect_from_uploaded_image(image):
             RGB_img = image
 
 
-def detect_and_predict_mask(frame, net, model):
+def detect_and_predict_mask(frame):
+    global RGB_img, model, net, weightsPath, prototxtPath
     # grab the dimensions of the frame and then construct a blob
     # from it
     (h, w) = frame.shape[:2]
@@ -164,9 +151,31 @@ def detect_and_predict_mask(frame, net, model):
 
 
 def mask_video():
-    global net, model, vs
+    global RGB_img, model, net, weightsPath, prototxtPath, vs
     # load our serialized face detector model from disk
 
+    # print("[INFO] loading face detector model...")
+    # prototxtPath = os.path.sep.join(["face_detector", "deploy.prototxt"])
+    # weightsPath = os.path.sep.join(["face_detector",
+    #                                 "res10_300x300_ssd_iter_140000.caffemodel"])
+    # net = cv2.dnn.readNet(prototxtPath, weightsPath)
+
+    # # load the face mask detector model from disk
+    # print("[INFO] loading face mask detector model...")
+    # model = load_model("mask_detector.model")
+
+    # initialize the video stream and allow the camera sensor to warm up
+    print("[INFO] starting video stream...")
+    vs = VideoStream(src=0, framerate=60).start()
+    # vs = VideoStream(src=3, framerate=60).start()
+    # vs = FileVideoStream(path="videos\sampleVideo2.720p.mp4").start()
+
+    time.sleep(2.0)
+
+
+def initiallise_models():
+    global RGB_img, model, net, weightsPath, prototxtPath
+    # load our serialized face detector model from disk
     print("[INFO] loading face detector model...")
     prototxtPath = os.path.sep.join(["face_detector", "deploy.prototxt"])
     weightsPath = os.path.sep.join(["face_detector",
@@ -176,14 +185,6 @@ def mask_video():
     # load the face mask detector model from disk
     print("[INFO] loading face mask detector model...")
     model = load_model("mask_detector.model")
-
-    # initialize the video stream and allow the camera sensor to warm up
-    print("[INFO] starting video stream...")
-    vs = VideoStream(src=0, framerate=60).start()
-    # vs = VideoStream(src=3, framerate=60).start()
-    # vs = FileVideoStream(path="videos\sampleVideo2.720p.mp4").start()
-
-    time.sleep(2.0)
 
 
 def initiallise_app():
@@ -196,6 +197,8 @@ def initiallise_app():
     st.sidebar.markdown("# Mask Detection on?")
     choice = st.sidebar.selectbox(
         "Choose among the given options:", activities)
+
+    initiallise_models()
 
     if choice == 'Image':
         st.markdown('<h2 align="center">Detection on Image</h2>',
@@ -228,7 +231,7 @@ def initiallise_app():
 
                 # detect faces in the frame and determine if they are wearing a
                 # face mask or not
-                (locs, preds) = detect_and_predict_mask(frame, net, model)
+                (locs, preds) = detect_and_predict_mask(frame)
 
                 # loop over the detected face locations and their corresponding
                 # locations
