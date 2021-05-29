@@ -1,1 +1,1 @@
-streamlit.exe run .\app.py
+D:\Projects\Face-Mask-Detection\env\Scripts\streamlit.exe run .\app.py
