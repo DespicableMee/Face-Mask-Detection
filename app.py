@@ -204,14 +204,14 @@ def detect_from_live_camera_feed():
             cv2.putText(frame, label, (startX, startY - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 2)
             cv2.rectangle(frame, (startX, startY),
-                            (endX, endY), color, 2)
+                          (endX, endY), color, 2)
 
         detected_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
 
 def initiallise_app():
     global detected_frame
-    detected_frame = np.zeros((512, 512, 3), dtype = "uint8")
+    detected_frame = np.zeros((512, 512, 3), dtype="uint8")
     # Setting custom Page Title and Icon with changed layout and sidebar state
     st.set_page_config(page_title='Face Mask Detector', page_icon='😷',
                        layout='centered', initial_sidebar_state='expanded')
@@ -246,45 +246,45 @@ def initiallise_app():
     if choice == 'Webcam':
         st.markdown('<h2 align="center">Detection on Webcam</h2>',
                     unsafe_allow_html=True)
-        # image_placeholder = st.markdown('<h3 align="center">Click start to start the webcamera stream!</h3>', unsafe_allow_html=True)
-        image_placeholder = st.empty()
-        # if st.button('Start'):
+        image_placeholder = st.markdown('<h3 align="center">Click start to start the webcamera stream!</h3>', unsafe_allow_html=True)
+        # image_placeholder = st.empty()
+        if st.button('Start'):
         # Thread(target=detect_from_live_camera_feed).start()
-        while True:
-            # grab the frame from the threaded video stream and resize it
-            # to have a maximum width of 400 pixels
-            frame = vs.read()
-            frame = imutils.resize(frame, width=480, height=360)
+            while True:
+                # grab the frame from the threaded video stream and resize it
+                # to have a maximum width of 400 pixels
+                frame = vs.read()
+                frame = imutils.resize(frame, width=480, height=360)
 
-            # detect faces in the frame and determine if they are wearing a
-            # face mask or not
-            (locs, preds) = detect_and_predict_mask(frame)
+                # detect faces in the frame and determine if they are wearing a
+                # face mask or not
+                (locs, preds) = detect_and_predict_mask(frame)
 
-            # loop over the detected face locations and their corresponding
-            # locations
-            for (box, pred) in zip(locs, preds):
-                # unpack the bounding box and predictions
-                (startX, startY, endX, endY) = box
-                (mask, withoutMask) = pred
+                # loop over the detected face locations and their corresponding
+                # locations
+                for (box, pred) in zip(locs, preds):
+                    # unpack the bounding box and predictions
+                    (startX, startY, endX, endY) = box
+                    (mask, withoutMask) = pred
 
-                # determine the class label and color we'll use to draw
-                # the bounding box and text
-                label = "Mask" if mask > withoutMask else "No Mask"
-                color = (0, 255, 0) if label == "Mask" else (0, 0, 255)
+                    # determine the class label and color we'll use to draw
+                    # the bounding box and text
+                    label = "Mask" if mask > withoutMask else "No Mask"
+                    color = (0, 255, 0) if label == "Mask" else (0, 0, 255)
 
-                # include the probability in the label
-                label = "{}: {:.2f}%".format(
-                    label, max(mask, withoutMask) * 100)
+                    # include the probability in the label
+                    label = "{}: {:.2f}%".format(
+                        label, max(mask, withoutMask) * 100)
 
-                # display the label and bounding box rectangle on the output
-                # frame
-                cv2.putText(frame, label, (startX, startY - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 2)
-                cv2.rectangle(frame, (startX, startY),
+                    # display the label and bounding box rectangle on the output
+                    # frame
+                    cv2.putText(frame, label, (startX, startY - 10),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 2)
+                    cv2.rectangle(frame, (startX, startY),
                                 (endX, endY), color, 2)
 
-            detected_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            image_placeholder.image(detected_frame)
+                detected_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                image_placeholder.image(detected_frame)
 
     st.text("By:\n- Mohamed Farhan Fazal\n- Madhusudhan R\n- Kiran CR")
 
